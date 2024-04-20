@@ -1,4 +1,21 @@
-user: "Question:"
-bot: "<work>"
-turn_template: "<|user|> <|user-message|>\n\n<|bot|><|bot-message|>\n\n"
+user: &user "User:"
+bot: &bot "Assistant:"
+turn_template: "{user}: {user_message}\n\n{bot}: {bot_message}\n\n"
 context: ""
+
+function:
+  - name: user_message
+    args:
+      - message
+    code: return message
+
+  - name: bot_message
+    args: []
+    code: |-
+      import random
+      responses = [
+        "I'm here to help you!",
+        "How can I assist you today?",
+        "What seems to be the problem?"
+      ]
+      return random.choice(responses)
