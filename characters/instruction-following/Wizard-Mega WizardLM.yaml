@@ -1,4 +1,15 @@
-user: "### Instruction:"
-bot: "### Response:"
-turn_template: "<|user|>\n<|user-message|>\n\n<|bot|>\n<|bot-message|>\n\n"
-context: "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n"
+class DialogueManager:
+    def __init__(self):
+        self.turn_template = "<user>\n{user_message}\n\n<bot>\n{bot_message}\n\n"
+        self.context = "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n"
+
+    def generate_response(self, user_message):
+        # Add your response generation logic here
+        bot_message = "This is the bot's response to the user's message: " + user_message
+        response = self.turn_template.format(user="<user>", user_message=user_message, bot="<bot>", bot_message=bot_message)
+        return response
+
+user_message = input("### Instruction: ")
+dialogue_manager = DialogueManager()
+response = dialogue_manager.generate_response(user_message)
+print(dialogue_manager.context + response)
