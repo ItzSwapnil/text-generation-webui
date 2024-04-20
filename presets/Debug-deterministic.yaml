@@ -1,1 +1,5 @@
-do_sample: False
+do_sample = False
+
+# Alternatively, you can use the following code which is more idiomatic in Python:
+
+do_sample = False  # or True, depending on your needs
