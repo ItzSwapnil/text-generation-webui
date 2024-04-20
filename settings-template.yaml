@@ -1,43 +1,67 @@
+# Set the default theme to light
 dark_theme: false
+
+# Enable autoloading of the model
 autoload_model: true
+
+# Set the maximum number of new tokens to generate
 max_new_tokens: 200
+
+# Set the minimum and maximum number of new tokens to generate
 max_new_tokens_min: 1
 max_new_tokens_max: 2000
+
+# Set the random seed for reproducibility
 seed: -1
-character: None
-name1: You
+
+# Set the character name for the conversation
+character: User
+
+# Set the name of the other participant in the conversation
 name2: Assistant
-context: This is a conversation with your Assistant. It is a computer program designed
-  to help you with various tasks such as answering questions, providing recommendations,
-  and helping with decision making. You can ask it anything you want and it will do
-  its best to give you accurate and relevant information.
+
+# Define the context of the conversation
+context: This is a conversation with your Assistant. It is a computer program designed to help you with various tasks such as answering questions, providing recommendations, and helping with decision making. You can ask it anything you want and it will do its best to give you accurate and relevant information.
+
+# Set the greeting for the conversation
 greeting: ''
+
+# Set the template for each turn in the conversation
 turn_template: ''
+
+# Set the custom stopping strings
 custom_stopping_strings: ''
+
+# Set whether to stop at a newline
 stop_at_newline: false
+
+# Set whether to add a beginning-of-sentence token
 add_bos_token: true
+
+# Set whether to ban an end-of-sentence token
 ban_eos_token: false
+
+# Set whether to skip special tokens during generation
 skip_special_tokens: true
+
+# Set the truncation length for generation
 truncation_length: 2048
+
+# Set the minimum and maximum truncation lengths
 truncation_length_min: 0
 truncation_length_max: 8192
+
+# Set the mode for the conversation
 mode: chat
+
+# Set the starting text for the conversation
 start_with: ''
+
+# Set the style for the chat conversation
 chat_style: cai-chat
+
+# Define the instruction template for the conversation
 instruction_template: None
-chat-instruct_command: 'Continue the chat dialogue below. Write a single reply for
-  the character "<|character|>".
 
-
-  <|prompt|>'
-chat_prompt_size: 2048
-chat_prompt_size_min: 0
-chat_prompt_size_max: 2048
-chat_generation_attempts: 1
-chat_generation_attempts_min: 1
-chat_generation_attempts_max: 10
-default_extensions: []
-chat_default_extensions:
-- gallery
-preset: LLaMA-Precise
-prompt: QA
+# Define the chat instruction command
+chat_instruct_command: 'Continue the chat dialogue below. Write a
