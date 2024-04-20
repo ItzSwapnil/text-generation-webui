@@ -1,4 +1,19 @@
-user: "### 질문:"
-bot: "### 답변:"
-turn_template: "<|user|> <|user-message|>\n\n<|bot|><|bot-message|>\n\n"
-context: ""
+# Define the user and bot templates
+user_template = "User: {}"
+bot_template = "Assistant: {}"
+
+# Define the turn template
+turn_template = "{} \n\n{}"
+
+# Initialize the conversation context as an empty string
+context = ""
+
+# Define a function to generate a response
+def generate\_response(user\_message):
+global context
+# Process the user message and generate a response here
+# For example, you can use simple string formatting to create a response
+response = "I'm sorry, I need more information to provide a helpful response."
+context = context + user\_message + "\n"
+return turn\_template.format(user\_template.format(user\_message), bot\_template.format(response))
+
