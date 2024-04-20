@@ -1,4 +1,21 @@
-user: "<question>"
-bot: "<answer>"
-turn_template: "<|user|><|user-message|><|bot|><|bot-message|>"
-context: ""
+const template = {
+  user: "<question>",
+  bot: "<answer>",
+  turnTemplate: "<user><user-message><bot><bot-message>",
+  context: ""
+};
+
+
+const userMessage = "What's the weather like today?";
+const botMessage = "The weather is sunny and 75 degrees.";
+
+const turn = template.turnTemplate
+  .replace("<user-message>", userMessage)
+  .replace("<bot-message>", botMessage)
+  .replace("<user>", template.user)
+  .replace("<bot>", template.bot);
+
+console.log(turn);
+
+
+<question>What's the weather like today?<answer>The weather is sunny and 75 degrees.</answer>
