@@ -1,3 +1,14 @@
-user: "<|prompter|>"
-bot: "<|assistant|>"
-turn_template: "<|user|><|user-message|><|endoftext|><|bot|><|bot-message|><|endoftext|>"
+# Define the user and bot roles
+user = "<|prompter|>"
+bot = "<|assistant|>"
+
+# Define the turn template
+turn_template = "{} <|user-message|> <|endoftext|> {} <|bot-message|> <|endoftext|>"
+
+# Use the turn template to format a turn with a user message and bot message
+user_message = "Hello, how are you?"
+bot_message = "I'm an artificial intelligence and don't have feelings, but I'm here to help you. How can I assist you today?"
+turn = turn_template.format(user, user_message, bot, bot_message)
+
+# Print the formatted turn
+print(turn)
