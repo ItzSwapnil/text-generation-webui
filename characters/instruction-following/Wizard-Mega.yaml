@@ -1,4 +1,12 @@
-user: "### Instruction:"
-bot: "### Assistant:"
-turn_template: "<|user|> <|user-message|>\n\n<|bot|> <|bot-message|>\n\n"
-context: ""
+class ChatBot:
+    def __init__(self):
+        self.user = ""
+        self.user_message = ""
+        self.bot = ""
+        self.bot_message = ""
+        self.turn_template = "{user} {user_message}\n\n{bot} {bot_message}\n\n"
+        self.context = ""
+
+    @property
+    def formatted_turn(self):
+        return self.turn_template.format(user=self.user, user_message=self.user_message, bot=self.bot, bot_message=self.bot_message)
