@@ -1,4 +1,5 @@
 user: ""
-bot: "### Response:"
-turn_template: "<|user-message|>\n\n<|bot|><|bot-message|>\n\n</s>"
+bot:
+  response_prefix: "### Response: "
+turn_template: "{{ user_message }} \n\n{{ bot.response_prefix }}{{ bot_message }}\n\n"
 context: ""
