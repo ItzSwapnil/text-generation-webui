@@ -1,4 +1,5 @@
 import datetime
+import os
 import traceback
 from pathlib import Path
 
@@ -7,15 +8,15 @@ import torch
 from datasets import load_dataset
 from tqdm import tqdm
 
-from modules import shared
+import modules.shared as shared
 from modules.models import load_model, unload_model
 from modules.text_generation import encode
 from server import get_model_specific_settings, update_model_parameters
 
-
 def load_past_evaluations():
-    if Path('logs/evaluations.csv').exists():
-        df = pd.read_csv(Path('logs/evaluations.csv'), dtype=str)
+    csv_file = 'logs/evaluations.csv'
+    if os.path.exists(csv_file):
+        df = pd.read_csv(csv_file, dtype=str)
         df['Perplexity'] = pd.to_numeric(df['Perplexity'])
         return df
     else:
@@ -33,33 +34,33 @@ def save_past_evaluations(df):
     df.to_csv(filepath, index=False)
 
 
-def calculate_perplexity(models, input_dataset, stride, _max_length):
+def calculate_perplexity(models, input_dataset, stride, max_length):
     '''
     Based on:
     https://huggingface.co/docs/transformers/perplexity#calculating-ppl-with-fixedlength-models
     '''
 
-    global past_evaluations
     cumulative_log = ''
     cumulative_log += "Loading the input dataset...\n\n"
     yield cumulative_log
 
-    # Copied from https://github.com/qwopqwop200/GPTQ-for-LLaMa/blob/triton/utils/datautils.py
-    if input_dataset == 'wikitext':
-        data = load_dataset('wikitext', 'wikitext-2-raw-v1', split='test')
-        text = "\n\n".join(data['text'])
-    elif input_dataset == 'ptb':
-        data = load_dataset('ptb_text_only', 'penn_treebank', split='validation')
-        text = "\n\n".join(data['sentence'])
-    elif input_dataset == 'ptb_new':
-        data = load_dataset('ptb_text_only', 'penn_treebank', split='test')
-        text = " ".join(data['sentence'])
-    else:
-        with open(Path(f'training/datasets/{input_dataset}.txt'), 'r', encoding='utf-8') as f:
-            text = f.read()
+    def load_input_data(dataset):
+        if dataset == 'wikitext':
+            data = load_dataset('wikitext', 'wikitext-2-raw-v1', split='test')
+            text = "\n\n".join(data['text'])
+        elif dataset == 'ptb':
+            data = load_dataset('ptb_text_only', 'penn_treebank', split='validation')
+            text = "\n\n".join(data['sentence'])
+        elif dataset == 'ptb_new':
+            data = load_dataset('ptb_text_only', 'penn_treebank', split='test')
+            text = " ".join(data['sentence'])
+        else:
+            with open(Path(f'training/datasets/{dataset}.txt'), 'r', encoding='utf-8') as f:
+                text = f.read()
+        return text
 
     for model in models:
-        if is_in_past_evaluations(model, input_dataset, stride, _max_length):
+        if is_in_past_evaluations(model, input_dataset, stride, max_length):
             cumulative_log += f"{model} has already been tested. Ignoring.\n\n"
             yield cumulative_log
             continue
@@ -80,14 +81,14 @@ def calculate_perplexity(models, input_dataset, stride, _max_length):
 
         cumulative_log += f"Processing {shared.model_name}...\n\n"
         yield cumulative_log + "Tokenizing the input dataset...\n\n"
+        text = load_input_data(input_dataset)
         encodings = encode(text, add_special_tokens=False)
         seq_len = encodings.shape[1]
-        if _max_length:
-            max_length = _max_length
-        elif hasattr(shared.model.config, 'max_position_embeddings'):
-            max_length = shared.model.config.max_position_embeddings
-        else:
-            max_length = 2048
+        max_length = max_length if max_length else (
+            hasattr(shared.model.config, 'max_position_embeddings')
+            and shared.model.config.max_position_embeddings
+            or 2048
+        )
 
         nlls = []
         prev_end_loc = 0
@@ -114,7 +115,7 @@ def calculate_perplexity(models, input_dataset, stride, _max_length):
                 break
 
         ppl = torch.exp(torch.stack(nlls).mean())
-        add_entry_to_past_evaluations(float(ppl), shared.model_name, input_dataset, stride, _max_length)
+        add_entry_to_past_evaluations(float(ppl), shared.model_name, input_dataset, stride, max_length)
         save_past_evaluations(past_evaluations)
         cumulative_log += f"The perplexity for {shared.model_name} is: {float(ppl)}\n\n"
         yield cumulative_log
@@ -123,30 +124,4 @@ def calculate_perplexity(models, input_dataset, stride, _max_length):
 def add_entry_to_past_evaluations(perplexity, model, dataset, stride, max_length):
     global past_evaluations
     entry = {
-        'Model': model,
-        'LoRAs': ', '.join(shared.lora_names) or '-',
-        'Dataset': dataset,
-        'Perplexity': perplexity,
-        'stride': str(stride),
-        'max_length': str(max_length),
-        'Date': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'Comment': ''
-    }
-    past_evaluations = pd.concat([past_evaluations, pd.DataFrame([entry])], ignore_index=True)
-
-
-def is_in_past_evaluations(model, dataset, stride, max_length):
-    entries = past_evaluations[(past_evaluations['Model'] == model) &
-                               (past_evaluations['Dataset'] == dataset) &
-                               (past_evaluations['max_length'] == str(max_length)) &
-                               (past_evaluations['stride'] == str(stride))]
-
-    if entries.shape[0] > 0:
-        return True
-    else:
-        return False
-
-
-def generate_markdown_table():
-    sorted_df = past_evaluations.sort_values(by=['Dataset', 'stride', 'Perplexity', 'Date'])
-    return sorted_df
+        '
