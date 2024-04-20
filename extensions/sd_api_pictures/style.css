@@ -1,25 +1,29 @@
-/* Align the elements for SD_api_picture extension */
-.SDAP #sampler_box {
-  padding-top: var(--spacing-sm);
-  padding-bottom: var(--spacing-sm);
+/* Define reusable custom properties */
+:root {
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --input-width: 6em;
 }
 
-.SDAP #seed_box,
-.SDAP #cfg_box {
+/* Improved selector specificity */
+.extension-SD_api_picture #sampler_box,
+.extension-SD_api_picture #seed_box,
+.extension-SD_api_picture #cfg_box {
   padding-top: var(--spacing-md);
 }
 
-.SDAP #sampler_box span,
-.SDAP #seed_box span,
-.SDAP #cfg_box span{
+.extension-SD_api_picture #sampler_box span,
+.extension-SD_api_picture #seed_box span,
+.extension-SD_api_picture #cfg_box span {
   margin-bottom: var(--spacing-sm);
 }
 
-.SDAP svg.dropdown-arrow {
+.extension-SD_api_picture svg.dropdown-arrow {
   flex-shrink: 0 !important;
-  margin: 0px !important;
+  margin: 0 !important;
 }
 
-.SDAP .hires_opts input[type="number"] {
-  width: 6em !important;
+.extension-SD_api_picture .hires_opts input[type="number"] {
+  width: var(--input-width) !important;
 }
