@@ -1,2 +1,31 @@
-flask_cloudflared==0.0.12
-sentence-transformers
+Flask==2.0.1
+flask-cloudflared==0.0.12
+sentence-transformers==2.1.0
+
+
+from flask import Flask, request, jsonify
+import cloudflared.client
+import os
+from sentence_transformers import SentenceTransformer
+
+app = Flask(__name__)
+cloudflare_client = cloudflared.client.Client()
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+@app.route('/transform_text', methods=['POST'])
+def transform_text():
+    data = request.get_json()
+    text = data.get('text', [])
+    if not text:
+        return jsonify({'error': 'No text provided'}), 400
+
+    # Use Cloudflare's wait_for_dns to ensure the domain is resolved
+    cloudflare_client.wait_for_dns(os.environ['CLOUDFLARE_ZONE_ID'], os.environ['CLOUDFLARE_API_TOKEN'])
+
+    # Transform the text using the sentence-transformers library
+    embeddings = model.encode(text)
+
+    return jsonify({'embeddings': embeddings.tolist()})
+
+if __name__ == '__main__':
+    app.run(debug=True)
