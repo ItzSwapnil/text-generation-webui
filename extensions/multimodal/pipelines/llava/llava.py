@@ -12,6 +12,16 @@ from modules import shared
 from modules.logging_colors import logger
 from modules.text_generation import encode
 
+class LLaVA_Vision_Projector:
+    def __init__(self, projector_path: str, device: torch.device, dtype: torch.dtype):
+        self.projector = torch.nn.Linear(*self._get_projector_shape(projector_path)).to(device, dtype=dtype)
+        self.projector.weight = torch.nn.Parameter(torch.load(f"{projector_path}/weight.pt", map_location=device), False)
+        self.projector.bias = torch.nn.Parameter(torch.load(f"{projector_path}/bias.pt", map_location=device), False)
+
+    @staticmethod
+    def _get_projector_shape(projector_path: str) -> Tuple[int, int]:
+        with open(f"{projector_path}/shape.txt", "r") as f:
+            return tuple(map(int, f.read().strip().split()))
 
 class LLaVA_v0_Pipeline(AbstractMultimodalPipeline):
     CLIP_REPO = "openai/clip-vit-large-patch14"
@@ -31,13 +41,9 @@ class LLaVA_v0_Pipeline(AbstractMultimodalPipeline):
         image_processor = CLIPImageProcessor.from_pretrained(LLaVA_v0_Pipeline.CLIP_REPO, torch_dtype=self.clip_dtype)
         vision_tower = CLIPVisionModel.from_pretrained(LLaVA_v0_Pipeline.CLIP_REPO, torch_dtype=self.clip_dtype).to(self.clip_device)
 
-        logger.info(f"LLaVA - Loading projector from {self.llava_projector_repo()} as {self.projector_dtype} on {self.projector_device}...")
+        logger.info(f"LLaVA - Loading projector...")
         projector_path = hf_hub_download(self.llava_projector_repo(), self.llava_projector_filename())
-        mm_projector = torch.nn.Linear(*self.llava_projector_shape())
-        projector_data = torch.load(projector_path)
-        mm_projector.weight = torch.nn.Parameter(projector_data['model.mm_projector.weight'].to(dtype=self.projector_dtype), False)
-        mm_projector.bias = torch.nn.Parameter(projector_data['model.mm_projector.bias'].to(dtype=self.projector_dtype), False)
-        mm_projector = mm_projector.to(self.projector_device)
+        mm_projector = LLaVA_Vision_Projector(projector_path, self.projector_device, self.projector_dtype)
 
         logger.info(f"LLaVA supporting models loaded, took {time.time() - start_ts:.2f} seconds")
         return image_processor, vision_tower, mm_projector
@@ -71,24 +77,16 @@ class LLaVA_v0_Pipeline(AbstractMultimodalPipeline):
             select_hidden_state_layer = -2
             select_hidden_state = image_forward_outs.hidden_states[select_hidden_state_layer]
             image_features = select_hidden_state[:, 1:].to(self.projector_device, dtype=self.projector_dtype)
-            image_features = self.mm_projector(image_features)
+            image_features = self.mm_projector.projector(image_features)
         return image_features.to(shared.model.device, dtype=shared.model.dtype)
 
-    @staticmethod
     @abstractmethod
-    def llava_projector_repo() -> str:
+    def llava_projector_repo(self) -> str:
         pass
 
-    @staticmethod
     @abstractmethod
-    def llava_projector_filename() -> str:
+    def llava_projector_filename(self) -> str:
         pass
-
-    @staticmethod
-    @abstractmethod
-    def llava_projector_shape() -> Tuple[int, int]:
-        pass
-
 
 class LLaVA_v0_13B_Pipeline(LLaVA_v0_Pipeline):
     def __init__(self, params: dict) -> None:
@@ -102,39 +100,14 @@ class LLaVA_v0_13B_Pipeline(LLaVA_v0_Pipeline):
     def placeholder_token_id() -> int:
         return 32000
 
-    @staticmethod
-    def llava_projector_shape() -> Tuple[int, int]:
-        return (1024, 5120)
-
-    @staticmethod
-    def llava_projector_filename() -> str:
-        return "mm_projector.bin"
-
-    @staticmethod
-    def llava_projector_repo() -> str:
+    def llava_projector_repo(self) -> str:
         return "liuhaotian/LLaVA-13b-delta-v0"
 
+    def llava_projector_filename(self) -> str:
+        return "mm_projector.bin"
 
 class LLaVA_v0_7B_Pipeline(LLaVA_v0_Pipeline):
     def __init__(self, params: dict) -> None:
         super().__init__(params)
 
-    @staticmethod
-    def name() -> str:
-        return "llava-7b"
-
-    @staticmethod
-    def placeholder_token_id() -> int:
-        return 32001
-
-    @staticmethod
-    def llava_projector_shape() -> Tuple[int, int]:
-        return (1024, 4096)
-
-    @staticmethod
-    def llava_projector_filename() -> str:
-        return "mm_projector.bin"
-
-    @staticmethod
-    def llava_projector_repo() -> str:
-        return "liuhaotian/LLaVA-7b-delta-v0"
+    @static
