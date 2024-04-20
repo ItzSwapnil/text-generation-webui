@@ -1,5 +1,13 @@
-ipython
-num2words
-omegaconf
-pydub
-PyYAML
+# Importing required packages
+import ipython
+from num2words import num2words
+import omegaconf
+from pydub import AudioSegment
+import yaml
+
+# Check if the packages are imported correctly
+print("ipython version:", ipython.__version__)
+print("num2words version:", num2words.__version__)
+print("omegaconf version:", omegaconf.__version__)
+print("pydub version:", AudioSegment.__version__)
+print("PyYAML version:", yaml.__version__)
