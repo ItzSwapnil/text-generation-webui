@@ -1,29 +1,28 @@
 .container {
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-    background-color: rgb(31, 41, 55);
-    padding: 3em;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-    color: #efefef !important;
+  max-width: 600px;
+  margin: 0 auto;
+  background-color: #1f2937;
+  padding: 3em;
+  color: #eef2f3;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
-.container p, .container li {
-    font-size: 16px !important;
-    color: #efefef !important;
-    margin-bottom: 22px;
-    line-height: 1.4 !important;
+.container p,
+.container li {
+  font-size: 16px;
+  line-height: 1.4;
+  margin-bottom: 1.2em;
+  color: #eef2f3;
 }
 
-.container li > p {
-    display: inline !important;
+.container li > code,
+.container p > code {
+  display: inline-block;
+  white-space: normal;
+  overflow-x: auto;
 }
 
-.container code {
-    overflow-x: auto;
-}
-
-.container :not(pre) > code {
-    white-space: normal !important;
+pre.container code {
+  white-space: pre;
 }
