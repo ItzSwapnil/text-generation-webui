@@ -1,3 +1,8 @@
-do_sample: False
-penalty_alpha: 0.6
-top_k: 4
+# Set the flag for doing sample to False
+do_sample = False
+
+# Set the penalty alpha value to 0.6
+penalty_alpha = 0.6
+
+# Set the top k value to 4
+top_k = 4
