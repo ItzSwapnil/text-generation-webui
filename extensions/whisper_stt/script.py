@@ -3,11 +3,7 @@ import speech_recognition as sr
 
 from modules import shared
 
-input_hijack = {
-    'state': False,
-    'value': ["", ""]
-}
-
+input_hijack = ["", ""]
 
 def do_stt(audio):
     transcription = ""
@@ -19,29 +15,28 @@ def do_stt(audio):
     try:
         transcription = r.recognize_whisper(audio_data, language="english", model="base.en")
     except sr.UnknownValueError:
-        print("Whisper could not understand audio")
+        transcription = "Whisper could not understand audio"
     except sr.RequestError as e:
-        print("Could not request results from Whisper", e)
+        transcription = f"Could not request results from Whisper: {e}"
 
     return transcription
-
 
 def auto_transcribe(audio, auto_submit):
     if audio is None:
         return "", ""
 
     transcription = do_stt(audio)
-    if auto_submit:
-        input_hijack.update({"state": True, "value": [transcription, transcription]})
+    if auto_submit and transcription != "":
+        input_hijack = [transcription, transcription]
 
     return transcription, None
-
 
 def ui():
     with gr.Row():
         audio = gr.Audio(source="microphone")
         auto_submit = gr.Checkbox(label='Submit the transcribed audio automatically', value=True)
+        clear = gr.Button(label='Clear')
 
     audio.change(
         auto_transcribe, [audio, auto_submit], [shared.gradio['textbox'], audio]).then(
-        None, auto_submit, None, _js="(check) => {if (check) { document.getElementById('Generate').click() }}")
+        None, auto_submit, None, _js="(check) => {if (check) { document.getElementById('Generate
