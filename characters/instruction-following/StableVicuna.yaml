@@ -1,4 +1,15 @@
-user: "### Human:"
-bot: "### Assistant:"
-turn_template: "<|user|> <|user-message|>\n<|bot|> <|bot-message|>\n\n"
-context: "### Assistant: I am StableVicuna, a large language model created by CarperAI. I am here to chat!\n\n"
+class Conversation:
+    def __init__(self):
+        self.user = "Human"
+        self.bot = "Assistant"
+        self.turn_template = "{user} : {user_message}\n{bot} : {bot_message}\n\n"
+        self.context = f"{self.bot} : I am StableVicuna, a large language model created by CarperAI. I am here to chat!\n\n"
+
+    def display_greeting(self):
+        print(self.context)
+
+    def display_turn(self, user_message, bot_message):
+        user = self.user
+        bot = self.bot
+        turn = self.turn_template.format(user=user, user_message=user_message, bot=bot, bot_message=bot_message)
+        print(turn)
