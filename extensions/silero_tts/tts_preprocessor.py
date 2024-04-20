@@ -1,9 +1,11 @@
 import re
+import sys
+import num2words
 
 from num2words import num2words
 
-punctuation = r'[\s,.?!/)\'\]>]'
-alphabet_map = {
+PUNCTUATION = r'[\s,.?!/)\'\]>]'
+ALPHABET_MAP = {
     "A": " Ei ",
     "B": " Bee ",
     "C": " See ",
@@ -33,52 +35,41 @@ alphabet_map = {
 }
 
 
-def preprocess(string):
-    # the order for some of these matter
-    # For example, you need to remove the commas in numbers before expanding them
-    string = remove_surrounded_chars(string)
-    string = string.replace('"', '')
-    string = string.replace('\u201D', '').replace('\u201C', '')  # right and left quote
-    string = string.replace('\u201F', '')  # italic looking quote
-    string = string.replace('\n', ' ')
-    string = convert_num_locale(string)
-    string = replace_negative(string)
-    string = replace_roman(string)
-    string = hyphen_range_to(string)
-    string = num_to_words(string)
-
-    # TODO Try to use a ML predictor to expand abbreviations. It's hard, dependent on context, and whether to actually
-    # try to say the abbreviation or spell it out as I've done below is not agreed upon
-
-    # For now, expand abbreviations to pronunciations
-    # replace_abbreviations adds a lot of unnecessary whitespace to ensure separation
-    string = replace_abbreviations(string)
-    string = replace_lowercase_abbreviations(string)
-
-    # cleanup whitespaces
-    # remove whitespace before punctuation
-    string = re.sub(rf'\s+({punctuation})', r'\1', string)
-    string = string.strip()
-    # compact whitespace
-    string = ' '.join(string.split())
-
-    return string
+def preprocess(text: str) -> str:
+    """
+    Preprocesses a string by removing unnecessary characters, expanding numbers, and replacing abbreviations with their phonetic pronunciation.
+    """
+    text = remove_surrounded_chars(text)
+    text = text.replace('"', '')
+    text = text.replace('”', '').replace('“', '')  # right and left quote
+    text = text.replace('‟', '').replace('„', '')  # right and left quote
+    text = text.replace('\n', ' ')
+    text = convert_num_locale(text)
+    text = replace_negative(text)
+    text = replace_roman(text)
+    text = hyphen_range_to(text)
+    text = num_to_words(text)
+    text = replace_abbreviations(text)
+    text = replace_lowercase_abbreviations(text)
+    text = cleanup_whitespace(text)
+    return text
 
 
-def remove_surrounded_chars(string):
-    # first this expression will check if there is a string nested exclusively between a alt=
-    # and a style= string. This would correspond to only a the alt text of an embedded image
-    # If it matches it will only keep that part as the string, and rend it for further processing
-    # Afterwards this expression matches to 'as few symbols as possible (0 upwards) between any
-    # asterisks' OR' as few symbols as possible (0 upwards) between an asterisk and the end of the string'
-    if re.search(r'(?<=alt=)(.*)(?=style=)', string, re.DOTALL):
-        m = re.search(r'(?<=alt=)(.*)(?=style=)', string, re.DOTALL)
-        string = m.group(0)
-    return re.sub(r'\*[^*]*?(\*|$)', '', string)
+def remove_surrounded_chars(text: str) -> str:
+    """
+    Removes characters surrounded by certain tags.
+    """
+    if re.search(r'(?<=alt=)(.*)(?=style=)', text, re.DOTALL):
+        m = re.search(r'(?<=alt=)(.*)(?=style=)', text, re.DOTALL)
+        text = m.group(0)
+    text = re.sub(r'\*[^*]*?(\*|$)', '', text)
+    return text
 
 
-def convert_num_locale(text):
-    # This detects locale and converts it to American without comma separators
+def convert_num_locale(text: str) -> str:
+    """
+    Converts numbers in the text to American format.
+    """
     pattern = re.compile(r'(?:\s|^)\d{1,3}(?:\.\d{3})+(,\d+)(?:\s|$)')
     result = text
     while True:
@@ -97,16 +88,19 @@ def convert_num_locale(text):
     return result
 
 
-def replace_negative(string):
-    # handles situations like -5. -5 would become negative 5, which would then be expanded to negative five
-    return re.sub(rf'(\s)(-)(\d+)({punctuation})', r'\1negative \3\4', string)
+def replace_negative(text: str) -> str:
+    """
+    Replaces negative numbers with their phonetic pronunciation.
+    """
+    return re.sub(rf'(\s)(-)(\d+)({PUNCTUATION})', r'\1negative \3\4', text)
 
 
-def replace_roman(string):
-    # find a string of roman numerals.
-    # Only 2 or more, to avoid capturing I and single character abbreviations, like names
-    pattern = re.compile(rf'\s[IVXLCDM]{{2,}}{punctuation}')
-    result = string
+def replace_roman(text: str) -> str:
+    """
+    Replaces Roman numerals with their Arabic equivalent.
+    """
+    pattern = re.compile(rf'\s[IVXLCDM]{{2,}}{PUNCTUATION}')
+    result = text
     while True:
         match = pattern.search(result)
         if match is None:
@@ -119,7 +113,10 @@ def replace_roman(string):
     return result
 
 
-def roman_to_int(s):
+def roman_to_int(s: str) -> int:
+    """
+    Converts a Roman numeral to its Arabic equivalent.
+    """
     rom_val = {'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}
     int_val = 0
     for i in range(len(s)):
@@ -130,71 +127,8 @@ def roman_to_int(s):
     return int_val
 
 
-def hyphen_range_to(text):
-    pattern = re.compile(r'(\d+)[-–](\d+)')
-    result = pattern.sub(lambda x: x.group(1) + ' to ' + x.group(2), text)
-    return result
-
-
-def num_to_words(text):
-    # 1000 or 10.23
-    pattern = re.compile(r'\d+\.\d+|\d+')
-    result = pattern.sub(lambda x: num2words(float(x.group())), text)
-    return result
-
-
-def replace_abbreviations(string):
-    # abbreviations 1 to 4 characters long. It will get things like A and I, but those are pronounced with their letter
-    pattern = re.compile(rf'(^|[\s(.\'\[<])([A-Z]{{1,4}})({punctuation}|$)')
-    result = string
-    while True:
-        match = pattern.search(result)
-        if match is None:
-            break
-
-        start = match.start()
-        end = match.end()
-        result = result[0:start] + replace_abbreviation(result[start:end]) + result[end:len(result)]
-
-    return result
-
-
-def replace_lowercase_abbreviations(string):
-    # abbreviations 1 to 4 characters long, separated by dots i.e. e.g.
-    pattern = re.compile(rf'(^|[\s(.\'\[<])(([a-z]\.){{1,4}})({punctuation}|$)')
-    result = string
-    while True:
-        match = pattern.search(result)
-        if match is None:
-            break
-
-        start = match.start()
-        end = match.end()
-        result = result[0:start] + replace_abbreviation(result[start:end].upper()) + result[end:len(result)]
-
-    return result
-
-
-def replace_abbreviation(string):
-    result = ""
-    for char in string:
-        result += match_mapping(char)
-
-    return result
-
-
-def match_mapping(char):
-    for mapping in alphabet_map.keys():
-        if char == mapping:
-            return alphabet_map[char]
-
-    return char
-
-
-def __main__(args):
-    print(preprocess(args[1]))
-
-
-if __name__ == "__main__":
-    import sys
-    __main__(sys.argv)
+def hyphen_range_to(text: str) -> str:
+    """
+    Replaces hyphenated ranges with their phonetic pronunciation.
+    """
+    pattern = re.compile(r'(\d+
