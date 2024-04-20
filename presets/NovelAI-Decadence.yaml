@@ -1,6 +1,8 @@
-do_sample: true
-top_p: 1.0
-top_k: 100
-temperature: 2
-repetition_penalty: 1
-typical_p: 0.97
+{
+  "do_sample": true,
+  "top_p": 1.0,
+  "top_k": 100,
+  "temperature": 2.0,
+  "repetition_penalty": 1.0,
+  "typical_p": 0.97
+}
